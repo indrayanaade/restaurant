@@ -3,9 +3,9 @@
 if (file_exists('setup_completed.flag')) {
     echo "Setup has already been completed. The SQL setup won't run again.";
 } else {
-    define('DB_HOST', 'localhost');
+    define('DB_HOST','35.219.93.22:6001');
     define('DB_USER', 'root');
-    define('DB_PASS', '');
+    define('DB_PASS', 'adMin!1234');
 
     // Create Connection
     $link = new mysqli(DB_HOST, DB_USER, DB_PASS);
@@ -26,6 +26,7 @@ if (file_exists('setup_completed.flag')) {
     // Switch to using the 'restaurantdb' database
     $link->select_db('restaurantdb');
 
+    $filename = __DIR__ . "/restaurantDB.txt";
     // Execute SQL statements from "restaurantdb.txt"
     function executeSQLFromFile($filename, $link) {
         $sql = file_get_contents($filename);
@@ -41,7 +42,7 @@ if (file_exists('setup_completed.flag')) {
     }
 
     // Execute SQL statements from "restaurantdb.txt"
-    executeSQLFromFile('restaurantdb.txt', $link);
+    executeSQLFromFile('restaurantDB.txt', $link);
 
     // Close the database connection
     $link->close();
