@@ -3,9 +3,9 @@
 if (file_exists('setup_completed.flag')) {
     echo "Setup has already been completed. The SQL setup won't run again.";
 } else {
-    define('DB_HOST','35.219.93.22:6001');
+    define('DB_HOST','localhost');
     define('DB_USER', 'root');
-    define('DB_PASS', 'adMin!1234');
+    define('DB_PASS', '');
 
     // Create Connection
     $link = new mysqli(DB_HOST, DB_USER, DB_PASS);

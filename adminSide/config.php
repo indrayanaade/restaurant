@@ -1,7 +1,7 @@
 <?php // Rememeber to change the username,password and database name to acutal values
-define('DB_HOST','35.219.93.22:6001');
+define('DB_HOST','localhost');
 define('DB_USER','root');
-define('DB_PASS','adMin!1234');
+define('DB_PASS','');
 define('DB_NAME','restaurantdb');
 
 //Create Connection
