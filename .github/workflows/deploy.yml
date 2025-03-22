@@ -4,10 +4,9 @@ on:
   push:
     branches:
       - master
-
 schedule:
-  - cron: '*/10 * * * *'  # Jalan tiap 10 menit
-workflow_dispatch:  # Menambahkan opsi manual trigger
+  - cron: '*/10 * * * *' 
+workflow_dispatch:
 
 jobs:
   push:
