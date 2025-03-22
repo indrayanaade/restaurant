@@ -3,7 +3,7 @@ name: Push to Repository
 on:
   push:
     branches:
-      - main
+      - master
 
 jobs:
   push:
@@ -24,4 +24,4 @@ jobs:
         run: |
           git add .
           git diff --quiet && git diff --staged --quiet || git commit -m "Automated commit from GitHub Actions"
-          git push origin main
+          git push origin master
