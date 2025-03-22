@@ -1,2 +1,4 @@
-
 setup_completed.flag
+index.php
+/admiSide/config.php
+/customerSide/config.php
