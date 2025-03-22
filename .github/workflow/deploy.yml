@@ -7,11 +7,13 @@ on:
 
 jobs:
   push:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.MY_GITHUB_TOKEN }} 
 
       - name: Configure Git
         run: |
@@ -21,5 +23,5 @@ jobs:
       - name: Commit and Push Changes
         run: |
           git add .
-          git commit -m "Automated commit from GitHub Actions" || echo "No changes to commit"
+          git diff --quiet && git diff --staged --quiet || git commit -m "Automated commit from GitHub Actions"
           git push origin main
