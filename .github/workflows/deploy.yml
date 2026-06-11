@@ -5,15 +5,55 @@ on:
     branches:
       - master
 
-jobs:
-  deploy:
+  workflow_dispatch:
 
+jobs:
+
+  secret-scan:
     runs-on: ubuntu-latest
 
     steps:
+      - uses: actions/checkout@v4
 
+      - name: Gitleaks Scan
+        uses: gitleaks/gitleaks-action@v2
+
+  sast:
+    runs-on: ubuntu-latest
+
+    needs: secret-scan
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Semgrep Scan
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: p/security-audit
+
+  helm-lint:
+    runs-on: ubuntu-latest
+
+    needs: sast
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: azure/setup-helm@v4
+
+      - name: Helm Lint
+        run: |
+          helm lint restaurant-chart
+
+  deploy:
+    runs-on: ubuntu-latest
+
+    needs: helm-lint
+
+    steps:
       - name: Deploy Server
         uses: appleboy/ssh-action@v1.0.3
+
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
@@ -29,6 +69,7 @@ jobs:
             git pull origin master
 
             echo "=== Get Last Tag ==="
+
             LAST_TAG=$(docker images restaurant \
               --format "{{.Tag}}" \
               | grep '^v[0-9]*$' \
@@ -52,9 +93,9 @@ jobs:
 
             echo "=== DockerHub Login ==="
 
-            docker login \
+            echo "${{ secrets.DOCKER_PASSWORD }}" | docker login \
               -u "${{ secrets.DOCKER_USERNAME }}" \
-              -p "${{ secrets.DOCKER_PASSWORD }}"
+              --password-stdin
 
             echo "=== Tag DockerHub Image ==="
 
@@ -74,8 +115,8 @@ jobs:
             echo "=== Update Compose ==="
 
             sed -i \
-            "s|image: .*restaurant.*|image: indrayanaade/restaurant:${NEW_TAG}|g" \
-            docker-compose.yml
+              "s|image: .*restaurant.*|image: indrayanaade/restaurant:${NEW_TAG}|g" \
+              docker-compose.yml
 
             echo "=== Deploy Docker Compose ==="
 
@@ -100,8 +141,10 @@ jobs:
               -n app \
               --timeout=300s
 
-            echo "=== Remove Old Images ==="
+            kubectl get pods -n app
+
+            echo "=== Cleanup Old Images ==="
 
             docker image prune -af --filter "until=72h"
 
-            echo "=== Done ==="
+            echo "=== Deployment Success ==="
