@@ -1,88 +1,116 @@
 name: Deploy Development
 
 on:
-  push:
-    branches:
-      - master
+push:
+branches:
+- master
+
+workflow_dispatch:
 
 jobs:
-  deploy:
+deploy:
 
-    runs-on: ubuntu-latest
+```
+runs-on: ubuntu-latest
 
-    steps:
+steps:
 
-      - name: Deploy Server
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
+  - name: Deploy Server
+    uses: appleboy/ssh-action@v1.0.3
+    with:
+      host: ${{ secrets.SERVER_HOST }}
+      username: ${{ secrets.SERVER_USER }}
+      key: ${{ secrets.SERVER_SSH_KEY }}
 
-          script: |
+      script: |
 
-            set -e
+        set -e
 
-            cd /storage/source-code/development/restaurant
+        echo "=== Server Info ==="
 
-            echo "=== Pull Latest Code ==="
-            git pull origin master
+        whoami
+        hostname
 
-            echo "=== Get Last Tag ==="
-            LAST_TAG=$(docker images restaurant \
-              --format "{{.Tag}}" \
-              | grep '^v[0-9]*$' \
-              | sed 's/v//' \
-              | sort -n \
-              | tail -1)
+        echo "=== Pull Latest Code ==="
 
-            if [ -z "$LAST_TAG" ]; then
-              NEXT_TAG=1
-            else
-              NEXT_TAG=$((LAST_TAG+1))
-            fi
+        cd /storage/source-code/development/restaurant
 
-            NEW_TAG="v${NEXT_TAG}"
+        git pull origin master
 
-            echo "=== Build Image ${NEW_TAG} ==="
+        echo "=== Get Last Image Tag ==="
 
-            docker build \
-              -t restaurant:${NEW_TAG} \
-              .
+        LAST_TAG=$(docker images restaurant \
+          --format "{{.Tag}}" \
+          | grep '^v[0-9]*$' \
+          | sed 's/v//' \
+          | sort -n \
+          | tail -1)
 
-            echo "=== DockerHub Login ==="
+        if [ -z "$LAST_TAG" ]; then
+          NEXT_TAG=1
+        else
+          NEXT_TAG=$((LAST_TAG + 1))
+        fi
 
-            docker login \
-              -u "${{ secrets.DOCKER_USERNAME }}" \
-              -p "${{ secrets.DOCKER_PASSWORD }}"
+        NEW_TAG="v${NEXT_TAG}"
 
-            echo "=== Tag DockerHub Image ==="
+        echo "=== Build Image ${NEW_TAG} ==="
 
-            docker tag \
-              restaurant:${NEW_TAG} \
-              indrayanaade/restaurant:${NEW_TAG}
+        docker build \
+          -t restaurant:${NEW_TAG} \
+          .
 
-            docker tag \
-              restaurant:${NEW_TAG} \
-              indrayanaade/restaurant:latest
+        echo "=== DockerHub Login ==="
 
-            echo "=== Push DockerHub ==="
+        echo "${{ secrets.DOCKER_PASSWORD }}" | docker login \
+          -u "${{ secrets.DOCKER_USERNAME }}" \
+          --password-stdin
 
-            docker push indrayanaade/restaurant:${NEW_TAG}
-            docker push indrayanaade/restaurant:latest
+        echo "=== Tag Image ==="
 
-            echo "=== Update Compose ==="
+        docker tag \
+          restaurant:${NEW_TAG} \
+          indrayanaade/restaurant:${NEW_TAG}
 
-            sed -i \
-              "s|image: restaurant:.*|image: restaurant:${NEW_TAG}|g" \
-              docker-compose.yml
+        docker tag \
+          restaurant:${NEW_TAG} \
+          indrayanaade/restaurant:latest
 
-            echo "=== Deploy ==="
+        echo "=== Push DockerHub ==="
 
-            docker compose up -d
+        docker push indrayanaade/restaurant:${NEW_TAG}
+        docker push indrayanaade/restaurant:latest
 
-            echo "=== Remove Old Images ==="
+        echo "=== Update Docker Compose ==="
 
-            docker image prune -af --filter "until=72h"
+        sed -i \
+          "s|image: .*restaurant.*|image: indrayanaade/restaurant:${NEW_TAG}|g" \
+          docker-compose.yml
 
-            echo "=== Done ==="
+        echo "=== Docker Compose Deploy ==="
+
+        docker compose pull
+        docker compose up -d
+
+        echo "=== Kubernetes Deploy ==="
+
+        cd /storage/source-code/development/restaurant-chart
+
+        helm upgrade restaurant . \
+          -n app \
+          --wait \
+          --set restaurant.image.repository=indrayanaade/restaurant \
+          --set restaurant.image.tag=${NEW_TAG}
+
+        echo "=== Verify Rollout ==="
+
+        kubectl rollout status deployment/restaurant \
+          -n app \
+          --timeout=300s
+
+        echo "=== Cleanup Old Images ==="
+
+        docker image prune -af --filter "until=72h"
+
+        echo "=== Deployment Success ==="
+```
