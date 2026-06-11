@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: restaurant
+
+spec:
+  replicas: {{ .Values.restaurant.replicaCount }}
+
+  selector:
+    matchLabels:
+      app: restaurant
+
+  template:
+    metadata:
+      labels:
+        app: restaurant
+
+    spec:
+      containers:
+        - name: restaurant
+          image: "{{ .Values.restaurant.image.repository }}:{{ .Values.restaurant.image.tag }}"
+
+          imagePullPolicy: Always
+
+          ports:
+            - containerPort: 80
+
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+
+            limits:
+              cpu: "500m"
+              memory: "512Mi"

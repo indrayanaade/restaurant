@@ -1,0 +1,26 @@
+mysql:
+  image:
+    repository: mysql
+    tag: "8.0"
+
+  database: restaurantdb
+  username: restaurant
+  password: mysql@breda!123
+  rootPassword: ro0t@breda!123
+
+  persistence:
+    enabled: true
+    size: 5Gi
+
+restaurant:
+  image:
+    repository: indrayanaade/restaurant
+    tag: latest
+
+  replicaCount: 1
+
+service:
+  type: NodePort
+
+ingress:
+  enabled: false
