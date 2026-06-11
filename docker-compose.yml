@@ -1,6 +1,6 @@
 services:
   restaurant:
-    image: indrayanaade/restaurant:v3
+    image: indrayanaade/restaurant:v4
     container_name: restaurant-v1
     restart: unless-stopped
     ports:
