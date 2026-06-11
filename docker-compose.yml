@@ -1,0 +1,33 @@
+services:
+  restaurant:
+    image: restaurant:v1
+    container_name: restaurant-v1
+    restart: unless-stopped
+    ports:
+      - "2929:80"
+    volumes:
+      - /storage/source-code/development/restaurant:/var/www/html
+    depends_on:
+      - mysql
+    networks:
+      - app-net
+
+  mysql:
+    image: mysql:8.0
+    container_name: restaurant-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "3399:3306"
+    volumes:
+      - /storage/docker-volume/restaurant/mysql:/var/lib/mysql
+    networks:
+      - app-net
+
+networks:
+  app-net:
+    external: true
